@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.WindowsServices;
 using Microsoft.Extensions.Configuration;
 using mssql_exporter.core;
 using mssql_exporter.core.config;
@@ -17,9 +19,10 @@ namespace mssql_exporter.server
     {
         public static void Main(string[] args)
         {
-            if (args.Length >= 1 && args[0].Equals("serve", StringComparison.CurrentCulture))
+            var isService = !(Debugger.IsAttached || args.Contains("--console"));
+            if (isService || (args.Length >= 1 && args[0].Equals("serve", StringComparison.CurrentCulture)))
             {
-                RunWebServer(args.Skip(1).ToArray());
+                RunWebServer(isService, args.Skip(1).ToArray());
             }
             else
             {
@@ -51,7 +54,7 @@ namespace mssql_exporter.server
             Console.WriteLine("      PROMETHEUS_MSSQL_ConfigText");
         }
 
-        public static void RunWebServer(string[] args)
+        public static void RunWebServer(bool runAsService, string[] args)
         {
             var switchMappings = new Dictionary<string, string>
             {
@@ -129,7 +132,15 @@ namespace mssql_exporter.server
 
             var collector = ConfigurePrometheus(configurationBinding, Log.Logger, metricFile, registry);
 
-            CreateWebHostBuilder(args, configurationBinding, registry).Build().Run();
+            var builder = CreateWebHostBuilder(args, configurationBinding, registry).Build();
+            if (runAsService)
+            {
+                builder.RunAsService();
+            }
+            else
+            {
+                builder.Run();
+            }
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args, IConfigure configurationBinding,
