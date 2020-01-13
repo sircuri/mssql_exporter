@@ -1,0 +1,5 @@
+{
+  "ConfigFile": "metrics.json",
+  "ServerPort": 8080,
+  "DataSource": "Server=.;Initial Catalog=Db;Persist Security Info=True;MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=True;Connection Timeout=8;"
+}
